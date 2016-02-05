@@ -15,6 +15,8 @@ void console_putchar(char c);
 int console_write(int unit, const void *buffer, int nblocks, int offset);
 void console_heartbeat();
 
+void console_window_start();
+
 /**
 * @brief sets the consoles fg color to given RGB
 * @details The purpose of this function is to change the color of text displayed on the screen shown when booting to an RGB tuple.

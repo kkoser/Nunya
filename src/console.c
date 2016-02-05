@@ -6,12 +6,15 @@ See the file LICENSE for details.
 
 #include "console.h"
 #include "graphics.h"
+#include "window.h"
 
 static int xsize = 80;
 static int ysize = 25;
 
 static int xpos = 0;
 static int ypos = 0;
+
+static struct window *win = 0;
 
 struct graphics_color bgcolor = { 0, 0, 0 };
 struct graphics_color fgcolor = { 255, 0, 0 };
@@ -22,15 +25,24 @@ static void console_reset() {
 }
 
 static void console_writechar(int x, int y, char ch) {
-    graphics_char(x * 8, y * 8, ch, fgcolor, bgcolor);
+    if(win == 0)
+        graphics_char(x * 8, y * 8, ch, fgcolor, bgcolor);
+    else
+        window_draw_char(win, x * 8, y * 8, ch, fgcolor, bgcolor);
 }
 
 void console_heartbeat() {
     static int onoff = 0;
     if (onoff) {
-        graphics_char(xpos * 8, ypos * 8, '_', fgcolor, bgcolor);
+        if(win == 0)
+            graphics_char(xpos * 8, ypos * 8, '_', fgcolor, bgcolor);
+        else 
+            window_draw_char(win, xpos * 8, ypos * 8, '_', fgcolor, bgcolor);
     } else {
-        graphics_char(xpos * 8, ypos * 8, '_', bgcolor, bgcolor);
+        if(win == 0)
+            graphics_char(xpos * 8, ypos * 8, '_', bgcolor, bgcolor);
+        else
+            window_draw_char(win, xpos * 8, ypos * 8, '_', bgcolor, bgcolor);
     }
     onoff = !onoff;
 }
@@ -93,8 +105,17 @@ int console_write(int unit, const void *buffer, int length, int offset) {
 void console_init() {
     xsize = graphics_width() / 8;
     ysize = graphics_height() / 8;
+
     console_reset();
     console_putstring("\nconsole: initialized\n");
+}
+
+void console_window_start() {
+    win = window_create(50, 50, 300, 300);
+    xsize = (graphics_width() - 100) / 8;
+    ysize = (graphics_height()) - 100 / 8;
+
+    console_reset();
 }
 
 uint8_t console_verify_color_range(uint8_t x) {

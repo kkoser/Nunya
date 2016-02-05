@@ -46,6 +46,8 @@ int kernel_main() {
 
     ata_init();
 
+    console_window_start();
+
     console_printf("\nBASEKERNEL READY:\n");
 
     //change text color to white after bootup
