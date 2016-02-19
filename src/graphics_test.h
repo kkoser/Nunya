@@ -8,6 +8,7 @@ See the file LICENSE for details.
 #define GRAPHICS_TEST_H
 
 #include "clock.h"
+#include "graphics.h"
 
 /**
  * @brief The signature of graphics test functions
@@ -16,15 +17,16 @@ See the file LICENSE for details.
  * cases of that feature.
  */
 typedef void (*graphics_tester)(void);
-
 struct graphics_test_runner {
 	const char *title;
-	graphics_tester *test;
+	graphics_tester test;
 	clock_t runtime_bound;
 };
 
 // The list of all graphics tests to be run when the graphics test suite is called upon
-static struct graphics_test_runner graphics_tests[] = {};
+static struct graphics_test_runner graphics_tests[] = {
+	{"Line Test", graphics_line_test, {3, 0}}
+};
 
 /**
  * @brief Runs all graphics tests

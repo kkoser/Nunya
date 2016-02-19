@@ -10,33 +10,36 @@ See the file LICENSE for details.
 
 // A function to time a specific test
 // Returns the amount of time that elapsed during the test
-clock_t time_test(graphics_tester *test) {
+static clock_t time_test(graphics_tester test) {
 	clock_t start = clock_read();
-	(*test)();
+	(test)();
 	clock_t end = clock_read();
 	return clock_diff(start, end);
 }
 
 // A test runner
 // Returns true if a test was executed in a passing amount of time
-int run_test(struct graphics_test_runner runner) {
-	clock_t actual_time = time_test(runner.test);
-	if(clock_compare(actual_time, runner.runtime_bound) < 0) {
+static int run_test(struct graphics_test_runner *runner) {
+	clock_t actual_time = time_test(runner->test);
+	if(clock_compare(actual_time, runner->runtime_bound) < 0) {
 		// The test failed
-		console_printf("Test %s FAILED with a time of %d.%ds\n", runner.title, actual_time.seconds, actual_time.millis);
+		console_printf("Test %s FAILED with a time of %d.%ds\n", runner->title, actual_time.seconds, actual_time.millis);
 		return 0;
 	} else {
-		console_printf("Test %s passed with a time of %d.%ds\n", runner.title, actual_time.seconds, actual_time.millis);
+		console_printf("Test %s passed with a time of %d.%ds\n", runner->title, actual_time.seconds, actual_time.millis);
 		return 1;
 	}
 }
 
 void run_all_tests() {
-	int size = sizeof(graphics_tests);
+	//int size = sizeof(graphics_tests);
+	int size = 1;
 	int i;
 	int failed = 0;
+	console_printf("Beginning tests\n");
 	for(i = 0; i < size; i += 1) {
-		if(!run_test(graphics_tests[i])) {
+		struct graphics_test_runner *runner = &(graphics_tests[i]);
+		if(!run_test(runner)) {
 			failed += 1;
 		}
 	}

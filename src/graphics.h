@@ -15,6 +15,8 @@ struct graphics_color {
     uint8_t b;
 };
 
+void graphics_line_test();
+
 int graphics_width();
 int graphics_height();
 

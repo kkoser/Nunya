@@ -9,8 +9,17 @@ See the file LICENSE for details.
 #include "font.h"
 #include "kernelcore.h"
 #include "math.h"
+#include "console.h"
 
 #define ARC_DT 0.01
+
+void graphics_line_test() {
+    struct graphics_color c = {0, 255, 0};
+    int i;
+    for(i = 0; i < 100000; i++) {
+        graphics_line(i, 0, 200, 200, c);
+    }
+}
 
 static int bounds_x_1, bounds_x_2, bounds_y_1, bounds_y_2;
 

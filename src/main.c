@@ -19,6 +19,7 @@ See the file LICENSE for details.
 #include "rtc.h"
 #include "kernelcore.h"
 #include "disk.h"
+#include "graphics_test.h"
 
 /*
 This is the C initialization point of the kernel.
@@ -48,6 +49,8 @@ int kernel_main() {
     ata_init();
 
     console_printf("\nBASEKERNEL READY:\n");
+
+    run_all_tests();
 
     //change text color to white after bootup
     console_set_fgcolor(255, 255, 255);
