@@ -28,9 +28,13 @@ void cmd_line_init();
  */
 void cmd_line_show_prompt();
 
+void cmd_line_help(const char *args);
+
 /**
  * @brief Give help to user on terminal usage
+ * @brief Run a designated test user process
+ * @details Load a designated user process from test_iso.iso and execute it.
  */
-void cmd_line_help(const char *args);
+void cmd_line_run_userproc();
 
 #endif
