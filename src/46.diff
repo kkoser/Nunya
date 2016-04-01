@@ -1,0 +1,192 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..b1c44b9
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,7 @@
++*.o
++bootblock
++kernel
++basekernel.img
++basekernel.iso
++test_iso.iso
++
+diff --git a/src/.gitignore b/src/.gitignore
+deleted file mode 100644
+index c96e93a..0000000
+--- a/src/.gitignore
++++ /dev/null
+@@ -1,5 +0,0 @@
+-*.o
+-bootblock
+-kernel
+-basekernel.img
+-basekernel.iso
+diff --git a/src/Makefile b/src/Makefile
+index 26be7cd..725cafc 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -6,7 +6,7 @@ TEST_OBJS=module_tests.o testing.o tests.o
+ KERNEL_CCFLAGS=-Wall -c -ffreestanding -m32 -march=i386
+ KERNEL_LDFLAGS=-m elf_i386
+ 
+-all: basekernel.iso
++all: basekernel.iso test_iso.iso
+ 
+ basekernel.iso: basekernel.img
+ 	genisoimage -J -R -o basekernel.iso -b basekernel.img basekernel.img
+@@ -22,6 +22,12 @@ bootblock: bootblock.o
+ kernel: ${OBJECTS}
+ 	ld ${KERNEL_LDFLAGS} -Ttext 0x10000 -s --oformat binary ${OBJECTS} -o $@
+ 
++test_iso.iso: userproc
++	mkdir ./test_iso && mv ./userproc ./test_iso/userproc && genisoimage -o ../test_iso.iso ./test_iso/ && rm -r ./test_iso
++
++userproc: test_userproc.o syscall.h syscall.o
++	ld ${KERNEL_LDFLAGS} -Ttext 0x80000000 -s --oformat binary test_userproc.o syscall.o -o $@
++
+ %.o: %.c
+ 	gcc ${KERNEL_CCFLAGS} $< -o $@
+ 
+@@ -29,4 +35,4 @@ kernel: ${OBJECTS}
+ 	gcc ${KERNEL_CCFLAGS} $< -o $@
+ 
+ clean:
+-	rm -rf basekernel.iso basekernel.img bootblock kernel *.o
++	rm -rf basekernel.iso basekernel.img bootblock userproc kernel ./test_iso *.o
+diff --git a/src/cmd_line.c b/src/cmd_line.c
+index 0869259..f1064ba 100644
+--- a/src/cmd_line.c
++++ b/src/cmd_line.c
+@@ -4,7 +4,7 @@ This software is distributed under the GNU General Public License.
+ See the file LICENSE for details.
+ */
+ 
+-
++#include "cmd_line.h"
+ #include "console.h"
+ #include "string.h"
+ #include "testing.h"
+@@ -12,6 +12,11 @@ See the file LICENSE for details.
+ #include "window.h"
+ #include "graphics.h"
+ 
++#include "iso.h"            // iso
++#include "memorylayout.h"   // PROCESS_ENTRY_POINT
++#include "process.h"        // current, pagetable_getmap
++#include "kernelcore.h"     // halt
++
+ #define KEYBOARD_BUFFER_SIZE 256
+ 
+ void cmd_line_init() {
+@@ -47,6 +52,8 @@ void cmd_line_attempt(const char *line) {
+         cmd_line_ls(the_rest);
+     } else if (strcmp("cat", first_word) == 0) {
+         cmd_line_cat(the_rest);
++    } else if (strcmp("runproc", first_word) == 0) {
++        cmd_line_run_userproc();
+     } else if (strcmp("window_test", first_word) == 0) {
+         console_printf("\f");
+         window_hierarchy_test();
+@@ -61,3 +68,31 @@ void cmd_line_attempt(const char *line) {
+     memset(line_copy, '\0', KEYBOARD_BUFFER_SIZE);
+     return;
+ }
++
++void cmd_line_run_userproc() {
++    // Load process data
++    struct iso_dir *root_dir = iso_dopen("/", 3);
++    struct iso_file *proc_file = iso_fopen("/USERPROC.", root_dir->ata_unit);
++    uint8_t *process_data = kmalloc(proc_file->data_length);
++    int num_read = iso_fread(process_data, proc_file->data_length, 1, proc_file);
++
++    // Create a new process(page, page)
++    struct process *new_proc = process_create(PAGE_SIZE, PAGE_SIZE);
++
++    // Load the code into the proper page
++    uint32_t real_addr;
++    if (!pagetable_getmap(new_proc->pagetable, PROCESS_ENTRY_POINT, &real_addr)) {
++        console_printf("Unable to get physical address of 0x80000000\n");
++        halt();
++    }
++    // Copy data
++    memcpy((void *)real_addr, (void *)process_data, proc_file->data_length);
++    kfree(process_data);
++
++    // Push the new process onto the ready list
++    __process_set_initial_process_ready(new_proc);
++
++    // Exit the current process, enter user mode
++    console_printf("Enter user mode\n");
++    process_exit(0);
++}
+diff --git a/src/cmd_line.h b/src/cmd_line.h
+index 21f7664..54293a9 100644
+--- a/src/cmd_line.h
++++ b/src/cmd_line.h
+@@ -28,4 +28,10 @@ void cmd_line_init();
+  */
+ void cmd_line_show_prompt();
+ 
++/**
++ * @brief Run a designated test user process
++ * @details Load a designated user process from test_iso.iso and execute it.
++ */
++void cmd_line_run_userproc();
++
+ #endif
+diff --git a/src/process.c b/src/process.c
+index c4413d2..d716bcc 100644
+--- a/src/process.c
++++ b/src/process.c
+@@ -24,7 +24,7 @@ extern uint32_t last_interrupt;
+ void process_init() {
+     // Create a dummy process with no code and no data, and load its pagetable
+     // Even though it's dummy, at least kernel memory is direct mapped, so
+-    // kernel code can run as usual
++    // kernel code can run as usual (specifically to enable ata interrupts)
+     current = process_create(0, 0);
+     pagetable_load(current->pagetable);
+ 
+@@ -183,3 +183,7 @@ void process_dump(struct process *p) {
+     console_printf("esp: %x\n", s->esp);
+     console_printf("eip: %x\n", s->eip);
+ }
++
++void __process_set_initial_process_ready(struct process *p) {
++    list_push_tail(&ready_list, &p->node);
++}
+diff --git a/src/process.h b/src/process.h
+index fba0766..a2d5724 100644
+--- a/src/process.h
++++ b/src/process.h
+@@ -42,6 +42,8 @@ void process_wait(struct list *q);
+ void process_wakeup(struct list *q);
+ void process_wakeup_all(struct list *q);
+ 
++void __process_set_initial_process_ready(struct process *p);
++
+ extern struct process *current;
+ 
+ #endif
+diff --git a/src/test_userproc.c b/src/test_userproc.c
+new file mode 100644
+index 0000000..f7b18a9
+--- /dev/null
++++ b/src/test_userproc.c
+@@ -0,0 +1,15 @@
++int main();
++int _start() {
++    return main();
++
++    // invoke system call that kills the process
++}
++
++#include "syscall.h"
++
++int main() {
++    while (1) {
++        testcall(37);
++    }
++    return 0;
++}
