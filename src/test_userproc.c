@@ -8,8 +8,21 @@ int _start() {
 #include "syscall.h"
 
 int main() {
+	create_window(10, 10, 400, 400);
+	struct graphics_color c = {0,255,0};
+	struct graphics_color bg = {0,0,0};
+	struct event e;
+	int x = 0;
+	// double r = 10;
+	// draw_circle(50, 50, &r, &c);
     while (1) {
-        testcall(37);
+    	int res = get_event(&e);
+    	if(res == 0) {
+    		if(e.type == EVENT_KEYBOARD_PRESS) {
+    			draw_char(x, 0, e.character, &c, &bg);
+    			x += 10;
+    		}
+    	}
     }
     return 0;
 }
