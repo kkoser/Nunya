@@ -8,6 +8,7 @@ See the file LICENSE for details.
 #include "console.h"
 #include "process.h"
 #include "window.h"
+#include "window_manager.h"
 
 #define CHECK_PROC_WINDOW() if(current->window == 0) return 1
 
@@ -69,6 +70,19 @@ int32_t sys_draw_string(int x, int y, const char *str, const struct graphics_col
     return 1;
 }
 
+int32_t sys_get_event(struct event *e) {
+    CHECK_PROC_WINDOW();
+    struct list *list = &(current->window->event_queue);
+    struct event *last_event = (struct event *)list_pop_tail(list);
+    if (last_event == 0) {
+        return 2;
+    }
+
+    memcpy(e, last_event, sizeof(struct event));
+
+    return 0;
+}
+
 int32_t syscall_handler(uint32_t n, uint32_t a, uint32_t b, uint32_t c,
                         uint32_t d, uint32_t e) {
     switch (n) {
@@ -92,6 +106,8 @@ int32_t syscall_handler(uint32_t n, uint32_t a, uint32_t b, uint32_t c,
             return sys_draw_char(a, b, (char)c, (const struct graphics_color *)d, (const struct graphics_color *)e);
         case SYSCALL_window_draw_string:
             return sys_draw_string(a, b, (const char *)c, (const struct graphics_color *)d, (const struct graphics_color *)e);
+        case SYSCALL_window_get_event:
+            return sys_get_event((struct event *)a);
         default:
             return -1;
     }

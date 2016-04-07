@@ -9,6 +9,7 @@ See the file LICENSE for details.
 
 #include "kerneltypes.h"
 #include "graphics.h"
+#include "window_manager.h"
 
 #define SYSCALL_exit     1
 #define SYSCALL_testcall 2
@@ -21,6 +22,7 @@ See the file LICENSE for details.
 #define SYSCALL_window_draw_circle 204
 #define SYSCALL_window_draw_char 205
 #define SYSCALL_window_draw_string 206
+#define SYSCALL_window_get_event 207
 
 uint32_t syscall(uint32_t n, uint32_t a, uint32_t b, uint32_t c, uint32_t d,
                  uint32_t e);
@@ -152,6 +154,20 @@ static inline int32_t draw_char(int x, int y, char c, const struct graphics_colo
 static inline int32_t draw_string(int x, int y, const char *str, const struct graphics_color *fgcolor,
 	const struct graphics_color *bgcolor) {
 	return syscall(SYSCALL_window_draw_string, x, y, (int)str, (int)fgcolor, (int)bgcolor);
+}
+
+/**
+ * @brief Retrieve information on window event
+ * @details Retrieves the information on the next event in
+ * the window's event_queue. If there is no event, an error
+ * will be returned.
+ * 
+ * @param event The buffer into which to copy the event info
+ * @return 0 on success, 1 if the calling process has no window,
+ * 2 if there is no event in the queue
+ */
+static inline int32_t get_event(struct event *e) {
+	return syscall(SYSCALL_window_get_event, (int)e, 0, 0, 0, 0);
 }
 
 #endif
