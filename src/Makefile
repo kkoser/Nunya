@@ -11,7 +11,7 @@ MEMORY_OBJS = memory_raw.o kmalloc.o
 TEST_OBJS = module_tests.o testing.o tests.o
 DEBUG_OBJS = debug_kernel.o
 FS_OBJS = fs.o syscall_handler_fs.o
-WINDOW_OBJS = window.o graphics.o syscall_handler_window.o window_manager.o
+WINDOW_OBJS = window.o graphics.o syscall_handler_window.o window_manager.o gfx.o
 PROCESS_OBJS = syscall_handler_process.o syscall_handler_permissions.o process.o permissions_capabilities.o
 CLOCK_OBJS = syscall_handler_clock.o syscall_handler_rtc.o
 
@@ -54,7 +54,7 @@ files.iso: ${BINARIES}
 	mv $^ ../files/bin/ && genisoimage -o ../files.iso ../files/
 
 bin/%.nun: bin/%.o
-	ld ${KERNEL_LDFLAGS} -Ttext 0x80000000 -s --oformat binary $< syscall.o -o $@
+	ld ${KERNEL_LDFLAGS} -Ttext 0x80000000 -s --oformat binary $< syscall.o gfx.o -o $@
 
 bin/%.o: bin/%.c
 	gcc ${KERNEL_CCFLAGS} -I ${LIB_INCLUDE_PATH} $< -o $@
