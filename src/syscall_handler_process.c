@@ -26,20 +26,20 @@ int32_t sys_run(const char *process_path, const uint32_t permissions_identifier,
 
     // Get the capability
     if (capability_owned_by_process(permissions_identifier, current) != 1) {
-        console_printf("Error: could not get permissions capability\n");
+        // console_printf("Error: could not get permissions capability\n");
         return -1;
     }
 
     // Load process data
     struct iso_dir *root_dir = iso_dopen("/", 3);
     if (root_dir == 0) {
-        console_printf("Error accessing binary directory\n");
+        // console_printf("Error accessing binary directory\n");
         return -1;
     }
 
     struct iso_file *proc_file = iso_fopen(process_path, root_dir->ata_unit);
     if (proc_file == 0) {
-        console_printf("Error accessing binary file\n");
+        // console_printf("Error accessing binary file\n");
         return -1;
     }
 
@@ -52,7 +52,7 @@ int32_t sys_run(const char *process_path, const uint32_t permissions_identifier,
     if (child_proc <= 0) {
         // free the intermediary memory we used
         process_cleanup(child_proc);
-        console_printf("Error creating process\n");
+        // console_printf("Error creating process\n");
         return -1;
     }
 
@@ -72,14 +72,14 @@ int32_t sys_run(const char *process_path, const uint32_t permissions_identifier,
 
     // check if we've exceeded the parent's allocation
     if (parent->number_of_pages_using > parent->permissions->max_number_of_pages) {
-        console_printf("Error: process %d attempted to create a process %d without available memory: %d > %d\n", parent->pid, child_proc->pid, parent->number_of_pages_using, parent->permissions->max_number_of_pages);
+        // console_printf("Error: process %d attempted to create a process %d without available memory: %d > %d\n", parent->pid, child_proc->pid, parent->number_of_pages_using, parent->permissions->max_number_of_pages);
         process_cleanup(child_proc);
         return -1;
     }
 
     // check if we've exceeded the child's allocation
     if (child_proc->number_of_pages_using > child_proc->permissions->max_number_of_pages) {
-        console_printf("Error: child process %d exceeded its limit\n", child_proc->pid);
+        // console_printf("Error: child process %d exceeded its limit\n", child_proc->pid);
         process_cleanup(child_proc);
         return -1;
     }
@@ -91,7 +91,7 @@ int32_t sys_run(const char *process_path, const uint32_t permissions_identifier,
     if (process_data == 0) {
         // free the intermediary memory we used
         kfree(process_data);
-        console_printf("Error allocating intermediary space\n");
+        // console_printf("Error allocating intermediary space\n");
         return -1;
     }
 
@@ -111,13 +111,13 @@ int32_t sys_run(const char *process_path, const uint32_t permissions_identifier,
             // free the intermediary memory we used
             kfree(process_data);
             process_cleanup(child_proc);
-            console_printf("Error reading binary data\n");
+            // console_printf("Error reading binary data\n");
             return -1;
         }
 
         // Get a new real address based on the current virtual address
         if (!pagetable_getmap(child_proc->pagetable, copy_location, &real_addr)) {
-            console_printf("Unable to get physical mapping of vmem location %x\n", copy_location);
+            // console_printf("Unable to get physical mapping of vmem location %x\n", copy_location);
             // free the intermediary memory we used
             kfree(process_data);
             process_cleanup(child_proc);

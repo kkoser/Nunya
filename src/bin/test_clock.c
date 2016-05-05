@@ -25,7 +25,7 @@ int main() {
     struct rtc_time t;
     struct graphics_color fgc = {255, 255, 255};
     struct graphics_color bgc = {0, 0, 0};
-    create_window(250, 250, 100, 30);
+    create_window(500, 30, 100, 30);
     while (1) {
         sleep(1000);
         read_rtc(&t);

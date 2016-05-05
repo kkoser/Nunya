@@ -53,8 +53,15 @@ int kernel_main() {
 
     cmd_line_init();
 
+
+
+    console_printf("\f");
+    uint32_t identifier = permissions_capability_create();
+    run("/BIN/SH.NUN", identifier);
+    permissions_capability_delete(identifier);
+
     while(1) {
-        cmd_line_show_prompt();
+        // cmd_line_show_prompt();
         cmd_line_attempt(keyboard_read_str());
     }
 

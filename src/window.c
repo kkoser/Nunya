@@ -80,7 +80,11 @@ struct window *window_create(int x, int y, int width, int height, struct window 
     w->background_color = background_color;
     window_set_border_color(w, border_color);
 
-    active_window = w;
+    // Temporary to ensure shell always gets events
+    if (active_window == 0) {
+        active_window = w;
+    }
+    // active_window = w;
     return w;
 }
 
